@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Yaji</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f9fafb;
+      color: #111827;
+      min-height: 100vh;
+      padding: 48px 16px;
+    }
+
+    .container { max-width: 580px; margin: 0 auto; }
+
+    h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 32px; color: #111827; }
+    h2 { font-size: 1rem; font-weight: 600; color: #374151; margin-bottom: 14px; }
+
+    /* Login */
+    #login-screen {
+      max-width: 340px;
+      margin: 80px auto 0;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 32px;
+    }
+    #login-screen h1 { text-align: center; margin-bottom: 24px; font-size: 1.25rem; }
+
+    /* App hidden by default */
+    #app { display: none; }
+
+    /* Form elements */
+    label { display: block; font-size: 0.8rem; font-weight: 600; color: #374151; margin-bottom: 5px; }
+    input[type="text"], input[type="password"], input[type="date"],
+    input[type="time"], input[type="number"], input[type="url"] {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      color: #111827;
+      background: #fff;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input:focus { border-color: #2563eb; }
+    .form-row { margin-bottom: 14px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* Buttons */
+    .btn {
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.15s;
+    }
+    .btn:hover { opacity: 0.88; }
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+    .btn-danger { background: #fee2e2; color: #dc2626; }
+
+    /* Card */
+    .card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    /* Presence toggle */
+    .presence-status {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .dot {
+      width: 13px; height: 13px;
+      border-radius: 50%;
+      background: #d1d5db;
+      flex-shrink: 0;
+    }
+    .dot.present {
+      background: #16a34a;
+      animation: pulse 2.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.4); }
+      50%       { box-shadow: 0 0 0 6px rgba(22, 163, 74, 0); }
+    }
+    .presence-label { font-size: 0.95rem; font-weight: 600; color: #374151; }
+    .presence-label.present { color: #15803d; }
+
+    .toggle-btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: background 0.2s, opacity 0.15s;
+    }
+    .toggle-btn:hover { opacity: 0.9; }
+    .toggle-btn.go-live { background: #16a34a; color: #fff; }
+    .toggle-btn.go-offline { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
+
+    /* Schedule list */
+    .entry {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .entry:last-child { border-bottom: none; padding-bottom: 0; }
+    .entry-meta { flex: 1; font-size: 0.875rem; }
+    .entry-meta strong { color: #111827; }
+    .entry-meta span { color: #6b7280; font-size: 0.8rem; display: block; margin-top: 1px; }
+
+    .no-entries { color: #9ca3af; font-size: 0.875rem; text-align: center; padding: 20px 0; }
+
+    /* Error */
+    .error { color: #dc2626; font-size: 0.8rem; margin-top: 8px; }
+
+    /* Nav */
+    .nav-link { font-size: 0.8rem; color: #6b7280; text-decoration: none; float: right; margin-top: 4px; }
+    .nav-link:hover { color: #111827; }
+  </style>
+</head>
+<body>
+
+  <!-- Login -->
+  <div id="login-screen">
+    <h1>Admin</h1>
+    <div class="form-row">
+      <label for="password">Password</label>
+      <input type="password" id="password" placeholder="Enter admin password" autocomplete="current-password">
+    </div>
+    <button class="btn btn-primary" style="width:100%" id="login-btn">Sign in</button>
+    <div class="error" id="login-error"></div>
+  </div>
+
+  <!-- App -->
+  <div id="app">
+    <div class="container">
+      <h1>Admin <a class="nav-link" href="/schedule" target="_blank">View public page →</a></h1>
+
+      <!-- Presence -->
+      <div class="card">
+        <h2>Presence</h2>
+        <div class="presence-status">
+          <div class="dot" id="dot"></div>
+          <div class="presence-label" id="presence-label">Loading...</div>
+        </div>
+        <button class="toggle-btn go-live" id="toggle-btn" onclick="togglePresence()">Go Live</button>
+      </div>
+
+      <!-- Schedule -->
+      <div class="card">
+        <h2>Upcoming Sessions</h2>
+        <div id="schedule-list"><div class="no-entries">Loading...</div></div>
+      </div>
+
+      <!-- Add entry -->
+      <div class="card">
+        <h2>Add Session</h2>
+        <div class="form-grid">
+          <div class="form-row">
+            <label for="date">Date</label>
+            <input type="date" id="date">
+          </div>
+          <div class="form-row">
+            <label for="time">Time</label>
+            <input type="time" id="time">
+          </div>
+        </div>
+        <div class="form-row">
+          <label for="label">Label</label>
+          <input type="text" id="label" placeholder="e.g. Office Hours, Team Drop-in">
+        </div>
+        <div class="form-grid">
+          <div class="form-row">
+            <label for="duration">Duration (minutes)</label>
+            <input type="number" id="duration" placeholder="60" min="1">
+          </div>
+          <div class="form-row">
+            <label for="link">Meeting link (optional)</label>
+            <input type="url" id="link" placeholder="https://meet.google.com/...">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="addEntry()">Add Session</button>
+        <div class="error" id="add-error"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let password = '';
+    let currentState = { present: false };
+
+    // ── Login ─────────────────────────────────────────────────────────────────
+
+    async function login() {
+      const pw = document.getElementById('password').value;
+      const err = document.getElementById('login-error');
+      err.textContent = '';
+      const res = await fetch('/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pw })
+      });
+      if (!res.ok) {
+        err.textContent = 'Incorrect password.';
+        return;
+      }
+      password = pw;
+      sessionStorage.setItem('yaji_pw', pw);
+      showApp();
+    }
+
+    document.getElementById('login-btn').addEventListener('click', login);
+    document.getElementById('password').addEventListener('keydown', e => {
+      if (e.key === 'Enter') login();
+    });
+
+    function showApp() {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      loadState();
+      loadSchedule();
+      startSSE();
+      prefillDate();
+    }
+
+    // Auto-login if password saved
+    const saved = sessionStorage.getItem('yaji_pw');
+    if (saved) { password = saved; showApp(); }
+
+    // ── Auth header ───────────────────────────────────────────────────────────
+
+    function authHeaders() {
+      return { 'Content-Type': 'application/json', 'x-admin-password': password };
+    }
+
+    // ── State / SSE ───────────────────────────────────────────────────────────
+
+    function applyState(state) {
+      currentState = state;
+      const dot = document.getElementById('dot');
+      const label = document.getElementById('presence-label');
+      const btn = document.getElementById('toggle-btn');
+      if (state.present) {
+        dot.className = 'dot present';
+        label.textContent = 'Currently live';
+        label.className = 'presence-label present';
+        btn.textContent = 'Go Offline';
+        btn.className = 'toggle-btn go-offline';
+      } else {
+        dot.className = 'dot';
+        label.textContent = 'Currently offline';
+        label.className = 'presence-label';
+        btn.textContent = 'Go Live';
+        btn.className = 'toggle-btn go-live';
+      }
+    }
+
+    async function loadState() {
+      const state = await fetch('/api/state').then(r => r.json());
+      applyState(state);
+    }
+
+    function startSSE() {
+      const es = new EventSource('/events');
+      es.onmessage = e => applyState(JSON.parse(e.data));
+    }
+
+    // ── Presence toggle ───────────────────────────────────────────────────────
+
+    async function togglePresence() {
+      const next = !currentState.present;
+      const res = await fetch('/admin/presence', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ present: next })
+      });
+      if (res.status === 401) { sessionStorage.removeItem('yaji_pw'); location.reload(); return; }
+      const { state } = await res.json();
+      applyState(state);
+    }
+
+    // ── Schedule ──────────────────────────────────────────────────────────────
+
+    function formatDateTime(date, time) {
+      const d = new Date(date + 'T00:00:00');
+      const dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      const [h, m] = time.split(':').map(Number);
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      return `${dateStr} at ${h % 12 || 12}:${m.toString().padStart(2, '0')} ${ampm}`;
+    }
+
+    async function loadSchedule() {
+      const schedule = await fetch('/api/schedule').then(r => r.json());
+      const today = new Date(); today.setHours(0,0,0,0);
+      const upcoming = schedule.filter(e => new Date(e.date + 'T00:00:00') >= today);
+      const list = document.getElementById('schedule-list');
+      if (!upcoming.length) {
+        list.innerHTML = '<div class="no-entries">No upcoming sessions.</div>';
+        return;
+      }
+      list.innerHTML = upcoming.map(e => `
+        <div class="entry" id="entry-${e.id}">
+          <div class="entry-meta">
+            <strong>${e.label}</strong>
+            <span>${formatDateTime(e.date, e.time)}${e.duration ? ` · ${e.duration}m` : ''}${e.link ? ` · <a href="${e.link}" target="_blank" rel="noopener">link</a>` : ''}</span>
+          </div>
+          <button class="btn btn-sm btn-danger" onclick="deleteEntry('${e.id}')">Remove</button>
+        </div>`).join('');
+    }
+
+    async function addEntry() {
+      const err = document.getElementById('add-error');
+      err.textContent = '';
+      const body = {
+        date: document.getElementById('date').value,
+        time: document.getElementById('time').value,
+        label: document.getElementById('label').value.trim(),
+        duration: document.getElementById('duration').value || null,
+        link: document.getElementById('link').value.trim() || null
+      };
+      if (!body.date || !body.time || !body.label) {
+        err.textContent = 'Date, time, and label are required.';
+        return;
+      }
+      const res = await fetch('/admin/schedule', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify(body)
+      });
+      if (res.status === 401) { sessionStorage.removeItem('yaji_pw'); location.reload(); return; }
+      if (!res.ok) { err.textContent = 'Failed to add session.'; return; }
+      document.getElementById('label').value = '';
+      document.getElementById('duration').value = '';
+      document.getElementById('link').value = '';
+      loadSchedule();
+    }
+
+    async function deleteEntry(id) {
+      const res = await fetch(`/admin/schedule/${id}`, {
+        method: 'DELETE',
+        headers: authHeaders()
+      });
+      if (res.ok) {
+        const el = document.getElementById(`entry-${id}`);
+        if (el) el.remove();
+        const list = document.getElementById('schedule-list');
+        if (!list.querySelector('.entry')) {
+          list.innerHTML = '<div class="no-entries">No upcoming sessions.</div>';
+        }
+      }
+    }
+
+    function prefillDate() {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('date').value = today;
+    }
+  </script>
+</body>
+</html>

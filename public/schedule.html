@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Open Hours</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f9fafb;
+      color: #111827;
+      min-height: 100vh;
+      padding: 48px 16px;
+    }
+
+    .container { max-width: 600px; margin: 0 auto; }
+
+    header { margin-bottom: 36px; }
+    header h1 { font-size: 1.75rem; font-weight: 700; color: #111827; }
+    header p { margin-top: 6px; color: #6b7280; font-size: 0.95rem; }
+
+    /* Status card */
+    .status-card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+    .dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #d1d5db;
+      flex-shrink: 0;
+      transition: background 0.4s;
+    }
+    .dot.present {
+      background: #16a34a;
+      animation: pulse 2.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.4); }
+      50%       { box-shadow: 0 0 0 6px rgba(22, 163, 74, 0); }
+    }
+    .status-text { flex: 1; }
+    .status-text .main { font-size: 1rem; font-weight: 600; color: #374151; }
+    .status-text .main.present { color: #15803d; }
+    .status-text .sub { font-size: 0.8rem; color: #9ca3af; margin-top: 2px; }
+
+    /* Notify button */
+    .notify-wrap { margin-bottom: 32px; }
+    #notify-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #fff;
+      border: 1px solid #d1d5db;
+      color: #374151;
+      font-size: 0.875rem;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    #notify-btn:hover { border-color: #2563eb; color: #2563eb; }
+    #notify-btn.subscribed { border-color: #16a34a; color: #15803d; background: #f0fdf4; cursor: default; }
+    #notify-btn.hidden { display: none; }
+    #notify-msg { font-size: 0.8rem; color: #6b7280; margin-top: 6px; display: none; }
+    #notify-msg.visible { display: block; }
+
+    /* Schedule */
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #9ca3af;
+      margin-bottom: 12px;
+    }
+
+    .date-group { margin-bottom: 28px; }
+    .date-label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 8px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .date-label.today { color: #2563eb; }
+
+    .entry {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .entry-time {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #374151;
+      min-width: 52px;
+    }
+    .entry-body { flex: 1; }
+    .entry-label { font-size: 0.925rem; color: #111827; }
+    .entry-duration { font-size: 0.775rem; color: #9ca3af; margin-top: 2px; }
+    .entry-link {
+      font-size: 0.825rem;
+      color: #2563eb;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .entry-link:hover { text-decoration: underline; }
+
+    .empty {
+      text-align: center;
+      color: #9ca3af;
+      font-size: 0.9rem;
+      padding: 40px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1 id="site-name">Open Hours</h1>
+      <p>Drop in anytime I'm available for an ad-hoc discussion.</p>
+    </header>
+
+    <div class="status-card">
+      <div class="dot" id="dot"></div>
+      <div class="status-text">
+        <div class="main" id="status-main">Checking...</div>
+        <div class="sub" id="status-sub"></div>
+      </div>
+    </div>
+
+    <div class="notify-wrap">
+      <button id="notify-btn" class="hidden">
+        <span>🔔</span> Notify me when available
+      </button>
+      <div id="notify-msg"></div>
+    </div>
+
+    <div class="section-title">Upcoming Schedule</div>
+    <div id="schedule-list"><div class="empty">Loading...</div></div>
+  </div>
+
+  <script>
+    const dot = document.getElementById('dot');
+    const statusMain = document.getElementById('status-main');
+    const statusSub = document.getElementById('status-sub');
+
+    function updateStatus(state) {
+      if (state.present) {
+        dot.className = 'dot present';
+        statusMain.textContent = 'Currently present — join now';
+        statusMain.className = 'main present';
+        statusSub.textContent = '';
+      } else {
+        dot.className = 'dot';
+        statusMain.textContent = 'Not currently present';
+        statusMain.className = 'main';
+        if (state.updatedAt) {
+          const ago = timeSince(new Date(state.updatedAt));
+          statusSub.textContent = `Last seen ${ago} ago`;
+        } else {
+          statusSub.textContent = '';
+        }
+      }
+    }
+
+    function timeSince(date) {
+      const secs = Math.floor((Date.now() - date) / 1000);
+      if (secs < 60) return `${secs}s`;
+      if (secs < 3600) return `${Math.floor(secs / 60)}m`;
+      if (secs < 86400) return `${Math.floor(secs / 3600)}h`;
+      return `${Math.floor(secs / 86400)}d`;
+    }
+
+    const es = new EventSource('/events');
+    es.onmessage = e => updateStatus(JSON.parse(e.data));
+    es.onerror = () => fetch('/api/state').then(r => r.json()).then(updateStatus);
+
+    // Schedule
+    function formatDate(dateStr) {
+      const d = new Date(dateStr + 'T00:00:00');
+      const today = new Date(); today.setHours(0,0,0,0);
+      const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+      if (d.getTime() === today.getTime()) return { label: 'Today', isToday: true };
+      if (d.getTime() === tomorrow.getTime()) return { label: 'Tomorrow', isToday: false };
+      return {
+        label: d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }),
+        isToday: false
+      };
+    }
+
+    function formatTime(timeStr) {
+      const [h, m] = timeStr.split(':').map(Number);
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      return `${h % 12 || 12}:${m.toString().padStart(2, '0')} ${ampm}`;
+    }
+
+    async function loadSchedule() {
+      const schedule = await fetch('/api/schedule').then(r => r.json());
+      const today = new Date(); today.setHours(0,0,0,0);
+      const upcoming = schedule.filter(e => new Date(e.date + 'T00:00:00') >= today);
+      const list = document.getElementById('schedule-list');
+
+      if (!upcoming.length) {
+        list.innerHTML = '<div class="empty">No upcoming sessions scheduled.</div>';
+        return;
+      }
+
+      const groups = {};
+      upcoming.forEach(e => {
+        if (!groups[e.date]) groups[e.date] = [];
+        groups[e.date].push(e);
+      });
+
+      list.innerHTML = Object.entries(groups).map(([date, entries]) => {
+        const { label, isToday } = formatDate(date);
+        const rows = entries.map(e => `
+          <div class="entry">
+            <div class="entry-time">${formatTime(e.time)}</div>
+            <div class="entry-body">
+              <div class="entry-label">${e.label}</div>
+              ${e.duration ? `<div class="entry-duration">${e.duration} minutes</div>` : ''}
+            </div>
+            ${e.link ? `<a class="entry-link" href="${e.link}" target="_blank" rel="noopener">Join →</a>` : ''}
+          </div>`).join('');
+        return `
+          <div class="date-group">
+            <div class="date-label${isToday ? ' today' : ''}">${label}</div>
+            ${rows}
+          </div>`;
+      }).join('');
+    }
+
+    loadSchedule();
+
+    // Web Push
+    async function initNotify() {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+      const keyRes = await fetch('/vapid-public-key');
+      const key = await keyRes.text();
+      if (!key) return;
+
+      const btn = document.getElementById('notify-btn');
+      const msg = document.getElementById('notify-msg');
+      btn.classList.remove('hidden');
+
+      const reg = await navigator.serviceWorker.register('/sw.js');
+      const existing = await reg.pushManager.getSubscription();
+      if (existing) {
+        btn.textContent = '✓ Notifications enabled';
+        btn.classList.add('subscribed');
+        return;
+      }
+
+      btn.addEventListener('click', async () => {
+        try {
+          const perm = await Notification.requestPermission();
+          if (perm !== 'granted') {
+            msg.textContent = 'Notification permission denied.';
+            msg.classList.add('visible');
+            return;
+          }
+          const sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(key)
+          });
+          await fetch('/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(sub)
+          });
+          btn.innerHTML = '✓ Notifications enabled';
+          btn.classList.add('subscribed');
+          msg.textContent = "You'll be notified when I go live.";
+          msg.classList.add('visible');
+        } catch (err) {
+          msg.textContent = 'Could not enable notifications.';
+          msg.classList.add('visible');
+        }
+      });
+    }
+
+    function urlBase64ToUint8Array(b64) {
+      const pad = '='.repeat((4 - b64.length % 4) % 4);
+      const base64 = (b64 + pad).replace(/-/g, '+').replace(/_/g, '/');
+      return Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+    }
+
+    initNotify();
+  </script>
+</body>
+</html>
