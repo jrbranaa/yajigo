@@ -10,10 +10,15 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: transparent;
       display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 10px 4px;
+    }
+    .row {
+      display: flex;
       align-items: center;
       gap: 10px;
-      padding: 10px 4px;
-      min-height: 44px;
+      min-height: 24px;
     }
     .dot {
       width: 11px;
@@ -45,16 +50,33 @@
       white-space: nowrap;
     }
     .schedule-link:hover { color: #4b5563; text-decoration: underline; }
+    .next-event {
+      font-size: 12px;
+      color: #9ca3af;
+      padding-left: 21px;
+      display: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .next-event.visible { display: block; }
+    .next-event.live { color: #15803d; font-weight: 600; }
+    .next-event a { color: inherit; text-decoration: none; }
+    .next-event a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
-  <div class="dot" id="dot"></div>
-  <span class="label" id="label">Checking...</span>
-  <a class="schedule-link" href="/schedule" target="_blank" rel="noopener">View schedule →</a>
+  <div class="row">
+    <div class="dot" id="dot"></div>
+    <span class="label" id="label">Checking...</span>
+    <a class="schedule-link" href="/schedule" target="_blank" rel="noopener">View schedule →</a>
+  </div>
+  <div class="next-event" id="next-event"></div>
 
   <script>
     const dot = document.getElementById('dot');
     const label = document.getElementById('label');
+    const nextEvent = document.getElementById('next-event');
 
     function update(state) {
       if (state.present) {
@@ -68,11 +90,61 @@
       }
     }
 
+    function formatNext(entry) {
+      const now = new Date();
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+      const entryDate = new Date(entry.date + 'T00:00:00');
+
+      let dateLabel;
+      if (entryDate.getTime() === today.getTime()) dateLabel = 'Today';
+      else if (entryDate.getTime() === tomorrow.getTime()) dateLabel = 'Tomorrow';
+      else dateLabel = entryDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+      const [h, m] = entry.time.split(':').map(Number);
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const timeLabel = `${h % 12 || 12}:${m.toString().padStart(2, '0')} ${ampm}`;
+
+      return `Next: ${entry.label} · ${dateLabel} at ${timeLabel}`;
+    }
+
+    async function loadScheduleInfo() {
+      try {
+        const schedule = await fetch('/api/schedule').then(r => r.json());
+        const now = new Date();
+
+        const current = schedule.find(e => {
+          const start = new Date(e.date + 'T' + e.time + ':00');
+          const end = new Date(start.getTime() + (e.duration || 120) * 60000);
+          return now >= start && now < end;
+        });
+
+        if (current) {
+          const inner = current.link
+            ? `<a href="${current.link}" target="_blank" rel="noopener">🔴 Live now: ${current.label} →</a>`
+            : `🔴 Live now: ${current.label}`;
+          nextEvent.innerHTML = inner;
+          nextEvent.classList.add('visible', 'live');
+          return;
+        }
+
+        const upcoming = schedule
+          .filter(e => new Date(e.date + 'T' + e.time + ':00') >= now)
+          .sort((a, b) => `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`));
+        if (upcoming.length) {
+          nextEvent.textContent = formatNext(upcoming[0]);
+          nextEvent.classList.add('visible');
+        }
+      } catch {}
+    }
+
     const es = new EventSource('/events');
     es.onmessage = e => update(JSON.parse(e.data));
     es.onerror = () => fetch('/api/state').then(r => r.json()).then(update).catch(() => {
       label.textContent = 'Status unavailable';
     });
+
+    loadScheduleInfo();
   </script>
 </body>
 </html>
