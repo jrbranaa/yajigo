@@ -68,21 +68,20 @@
       color: #9ca3af;
       padding-left: 21px;
       display: none;
+      align-items: center;
+      gap: 8px;
       white-space: nowrap;
       overflow: hidden;
-      text-overflow: ellipsis;
     }
-    .next-event.visible { display: block; }
+    .next-event.visible { display: flex; }
     .next-event.live { color: #15803d; font-weight: 600; }
-    .next-event a { color: inherit; text-decoration: none; }
-    .next-event a:hover { text-decoration: underline; }
+    .next-event-text { overflow: hidden; text-overflow: ellipsis; }
   </style>
 </head>
 <body>
   <div class="row">
     <div class="dot" id="dot"></div>
     <span class="label" id="label">Checking...</span>
-    <a class="join-btn" id="join-btn" href="#" target="_blank" rel="noopener" style="display:none">Join</a>
     <a class="schedule-link" href="/schedule" target="_blank" rel="noopener">View schedule →</a>
   </div>
   <div class="next-event" id="next-event"></div>
@@ -90,27 +89,17 @@
   <script>
     const dot = document.getElementById('dot');
     const label = document.getElementById('label');
-    const joinBtn = document.getElementById('join-btn');
     const nextEvent = document.getElementById('next-event');
-
-    let relevantLink = null;
 
     function update(state) {
       if (state.present) {
         dot.className = 'dot present';
         label.textContent = 'Currently present';
         label.className = 'label present';
-        if (relevantLink) {
-          joinBtn.href = relevantLink;
-          joinBtn.style.display = '';
-        } else {
-          joinBtn.style.display = 'none';
-        }
       } else {
         dot.className = 'dot';
         label.textContent = 'Not currently present';
         label.className = 'label';
-        joinBtn.style.display = 'none';
       }
     }
 
@@ -150,18 +139,13 @@
           .filter(e => new Date(e.date + 'T' + e.time + ':00') >= now)
           .sort((a, b) => `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`));
 
-        // Pick the most relevant event link: current session first, then next upcoming
-        const linkSource = current || upcoming[0];
-        relevantLink = linkSource?.link || null;
-
-        // Re-render the label now that we know the link
         update(state);
 
         if (current) {
-          const inner = current.link
-            ? `<a href="${current.link}" target="_blank" rel="noopener">🔴 Live now: ${current.label} →</a>`
-            : `🔴 Live now: ${current.label}`;
-          nextEvent.innerHTML = inner;
+          const btn = current.link
+            ? `<a class="join-btn" href="${current.link}" target="_blank" rel="noopener">Join</a>`
+            : '';
+          nextEvent.innerHTML = `<span class="next-event-text">Live now: ${current.label}</span>${btn}`;
           nextEvent.classList.add('visible', 'live');
           return;
         }
