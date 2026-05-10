@@ -43,6 +43,19 @@
       white-space: nowrap;
     }
     .label.present { color: #15803d; font-weight: 600; }
+    .join-btn {
+      font-size: 11px;
+      font-weight: 600;
+      color: #fff;
+      background: #16a34a;
+      border: none;
+      border-radius: 4px;
+      padding: 2px 8px;
+      text-decoration: none;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .join-btn:hover { background: #15803d; }
     .schedule-link {
       font-size: 12.5px;
       color: #9ca3af;
@@ -69,6 +82,7 @@
   <div class="row">
     <div class="dot" id="dot"></div>
     <span class="label" id="label">Checking...</span>
+    <a class="join-btn" id="join-btn" href="#" target="_blank" rel="noopener" style="display:none">Join</a>
     <a class="schedule-link" href="/schedule" target="_blank" rel="noopener">View schedule →</a>
   </div>
   <div class="next-event" id="next-event"></div>
@@ -76,17 +90,27 @@
   <script>
     const dot = document.getElementById('dot');
     const label = document.getElementById('label');
+    const joinBtn = document.getElementById('join-btn');
     const nextEvent = document.getElementById('next-event');
+
+    let relevantLink = null;
 
     function update(state) {
       if (state.present) {
         dot.className = 'dot present';
         label.textContent = 'Currently present';
         label.className = 'label present';
+        if (relevantLink) {
+          joinBtn.href = relevantLink;
+          joinBtn.style.display = '';
+        } else {
+          joinBtn.style.display = 'none';
+        }
       } else {
         dot.className = 'dot';
         label.textContent = 'Not currently present';
         label.className = 'label';
+        joinBtn.style.display = 'none';
       }
     }
 
@@ -110,7 +134,10 @@
 
     async function loadScheduleInfo() {
       try {
-        const schedule = await fetch('/api/schedule').then(r => r.json());
+        const [schedule, state] = await Promise.all([
+          fetch('/api/schedule').then(r => r.json()),
+          fetch('/api/state').then(r => r.json()),
+        ]);
         const now = new Date();
 
         const current = schedule.find(e => {
@@ -118,6 +145,17 @@
           const end = new Date(start.getTime() + (e.duration || 120) * 60000);
           return now >= start && now < end;
         });
+
+        const upcoming = schedule
+          .filter(e => new Date(e.date + 'T' + e.time + ':00') >= now)
+          .sort((a, b) => `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`));
+
+        // Pick the most relevant event link: current session first, then next upcoming
+        const linkSource = current || upcoming[0];
+        relevantLink = linkSource?.link || null;
+
+        // Re-render the label now that we know the link
+        update(state);
 
         if (current) {
           const inner = current.link
@@ -128,9 +166,6 @@
           return;
         }
 
-        const upcoming = schedule
-          .filter(e => new Date(e.date + 'T' + e.time + ':00') >= now)
-          .sort((a, b) => `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`));
         if (upcoming.length) {
           nextEvent.textContent = formatNext(upcoming[0]);
           nextEvent.classList.add('visible');
