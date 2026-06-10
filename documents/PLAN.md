@@ -130,3 +130,5 @@ The server validates `x-api-key` against an environment variable (`API_KEY`) and
 - iCal feed of the schedule
 - Simple link-based presence toggle (no admin UI needed — visit a secret URL to go live)
 - Configurable "auto-off" timer (mark yourself absent after N minutes)
+- Allow me to mark the event "full".  This allows me to prevent too many people joining a session.  
+- Require participants to have an account to join a session.  This reinforces a true community vs a bunch of annonymous participants.  
