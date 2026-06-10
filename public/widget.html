@@ -76,9 +76,18 @@
     .next-event.visible { display: flex; }
     .next-event.live { color: #15803d; font-weight: 600; }
     .next-event-text { overflow: hidden; text-overflow: ellipsis; }
+    .site-name {
+      font-size: 11px;
+      font-weight: 600;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding-bottom: 2px;
+    }
   </style>
 </head>
 <body>
+  <div class="site-name" id="site-name"></div>
   <div class="row">
     <div class="dot" id="dot"></div>
     <span class="label" id="label">Checking...</span>
@@ -90,6 +99,11 @@
     const dot = document.getElementById('dot');
     const label = document.getElementById('label');
     const nextEvent = document.getElementById('next-event');
+    const siteNameEl = document.getElementById('site-name');
+
+    fetch('/api/config').then(r => r.json()).then(cfg => {
+      siteNameEl.textContent = cfg.siteName;
+    }).catch(() => {});
 
     function update(state) {
       if (state.present) {
