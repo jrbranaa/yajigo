@@ -12,6 +12,7 @@ const SCHEDULE_FILE = path.join(DATA_DIR, 'schedule.json');
 const STATE_FILE = path.join(DATA_DIR, 'state.json');
 const SUBS_FILE = path.join(DATA_DIR, 'subscriptions.json');
 const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
+const WAITLIST_FILE = path.join(DATA_DIR, 'waitlist.json');
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
@@ -88,6 +89,22 @@ app.post('/admin/config', requireAdmin, (req, res) => {
   writeJSON(CONFIG_FILE, { siteName: siteName.trim() });
   res.json({ ok: true });
 });
+app.post('/waitlist', (req, res) => {
+  const email = (req.body.email || '').trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    return res.status(400).json({ error: 'Invalid email' });
+  const list = readJSON(WAITLIST_FILE, []);
+  if (!list.includes(email)) {
+    list.push(email);
+    writeJSON(WAITLIST_FILE, list);
+  }
+  res.status(201).json({ ok: true });
+});
+
+app.get('/admin/waitlist', requireAdmin, (req, res) => {
+  res.json(readJSON(WAITLIST_FILE, []));
+});
+
 app.get('/vapid-public-key', (req, res) => res.send(process.env.VAPID_PUBLIC_KEY || ''));
 
 app.post('/subscribe', (req, res) => {
@@ -205,6 +222,6 @@ async function notifyDiscord() {
 
 // ── Page routes ───────────────────────────────────────────────────────────────
 
-app.get('/', (req, res) => res.redirect('/schedule'));
+app.get('/', (req, res) => res.redirect('/landing'));
 
 app.listen(PORT, () => console.log(`Yaji running on http://localhost:${PORT}`));
