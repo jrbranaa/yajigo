@@ -133,7 +133,7 @@
 <body>
   <div class="container">
     <header>
-      <h1 id="site-name">Commune with JR</h1>
+      <h1 id="site-name"></h1>
       <p>Drop in anytime I'm available for an ad-hoc discussion.</p>
     </header>
 
@@ -248,6 +248,11 @@
     }
 
     loadSchedule();
+
+    fetch('/api/config').then(r => r.json()).then(cfg => {
+      document.getElementById('site-name').textContent = cfg.siteName;
+      document.title = cfg.siteName;
+    }).catch(() => {});
 
     // Web Push
     async function initNotify() {
