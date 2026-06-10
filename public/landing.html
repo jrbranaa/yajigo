@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yajigo — Be present on your website</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #fff;
+      color: #111827;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Nav */
+    nav {
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-logo {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #111827;
+      text-decoration: none;
+      letter-spacing: -0.01em;
+    }
+    .nav-links { display: flex; gap: 24px; align-items: center; }
+    .nav-links a {
+      font-size: 0.875rem;
+      color: #6b7280;
+      text-decoration: none;
+    }
+    .nav-links a:hover { color: #111827; }
+
+    /* Hero */
+    .hero {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 80px 24px 64px;
+      max-width: 680px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 99px;
+      padding: 5px 14px;
+      margin-bottom: 36px;
+    }
+    .indicator-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #16a34a;
+      animation: pulse 2.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.4); }
+      50%       { box-shadow: 0 0 0 4px rgba(22, 163, 74, 0); }
+    }
+    .indicator span {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #15803d;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 800;
+      color: #111827;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      margin-bottom: 24px;
+    }
+
+    .sub {
+      font-size: 1.0625rem;
+      line-height: 1.7;
+      color: #4b5563;
+      max-width: 520px;
+      margin-bottom: 20px;
+    }
+
+    .tagline {
+      font-size: 0.9375rem;
+      color: #9ca3af;
+      margin-bottom: 44px;
+      font-style: italic;
+    }
+
+    /* Waitlist form */
+    .waitlist {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+      max-width: 400px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .waitlist input[type="email"] {
+      flex: 1;
+      min-width: 200px;
+      padding: 11px 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      color: #111827;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .waitlist input[type="email"]:focus { border-color: #111827; }
+    .waitlist input[type="email"]::placeholder { color: #9ca3af; }
+    .waitlist button {
+      padding: 11px 22px;
+      background: #111827;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .waitlist button:hover { background: #1f2937; }
+    .waitlist-msg {
+      font-size: 0.8rem;
+      color: #15803d;
+      margin-top: 10px;
+      width: 100%;
+      text-align: center;
+      min-height: 1.2em;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 0.8rem;
+      color: #d1d5db;
+    }
+    footer a { color: inherit; text-decoration: none; }
+    footer a:hover { color: #9ca3af; }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a class="nav-logo" href="/landing">Yajigo</a>
+    <div class="nav-links">
+      <a href="/about">About</a>
+      <a href="/schedule">Demo</a>
+    </div>
+  </nav>
+
+  <div class="hero">
+    <div class="indicator">
+      <div class="indicator-dot"></div>
+      <span>Available now</span>
+    </div>
+
+    <h1>You're online.<br>But are you there?</h1>
+
+    <p class="sub">Yajigo is a presence widget for your website. One small element that tells visitors when you're available for a real, drop-in conversation — live indicator, upcoming schedule, instant notifications when you go live.</p>
+
+    <p class="tagline">No feed. No algorithm. Just an open door, when you choose to open it.</p>
+
+    <form class="waitlist" onsubmit="submitWaitlist(event)">
+      <input type="email" id="waitlist-email" placeholder="your@email.com" required>
+      <button type="submit">Join the waitlist →</button>
+      <div class="waitlist-msg" id="waitlist-msg"></div>
+    </form>
+  </div>
+
+  <footer>
+    <a href="/about">About</a> &nbsp;·&nbsp; Powered by <a href="https://yajigo.com">Yajigo</a>
+  </footer>
+
+  <script>
+    async function submitWaitlist(e) {
+      e.preventDefault();
+      const input = document.getElementById('waitlist-email');
+      const msg = document.getElementById('waitlist-msg');
+      const btn = e.submitter;
+      btn.disabled = true;
+      msg.style.color = '';
+      msg.textContent = '';
+      try {
+        const res = await fetch('/waitlist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: input.value.trim() })
+        });
+        if (!res.ok) throw new Error();
+        input.value = '';
+        msg.textContent = "You're on the list. We'll be in touch.";
+      } catch {
+        msg.style.color = '#dc2626';
+        msg.textContent = 'Something went wrong. Please try again.';
+      } finally {
+        btn.disabled = false;
+      }
+    }
+  </script>
+
+</body>
+</html>
