@@ -74,7 +74,10 @@ function requireAdmin(req, res, next) {
 
 app.get('/api/state', (req, res) => res.json(readJSON(STATE_FILE, { present: false })));
 app.get('/api/schedule', (req, res) => res.json(readJSON(SCHEDULE_FILE, [])));
-app.get('/api/config', (req, res) => res.json({ siteName: process.env.SITE_NAME || 'Open Hours' }));
+app.get('/api/config', (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({ siteName: process.env.SITE_NAME || 'Open Hours' });
+});
 app.get('/vapid-public-key', (req, res) => res.send(process.env.VAPID_PUBLIC_KEY || ''));
 
 app.post('/subscribe', (req, res) => {
