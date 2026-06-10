@@ -11,6 +11,7 @@ const DATA_DIR = path.join(__dirname, 'data');
 const SCHEDULE_FILE = path.join(DATA_DIR, 'schedule.json');
 const STATE_FILE = path.join(DATA_DIR, 'state.json');
 const SUBS_FILE = path.join(DATA_DIR, 'subscriptions.json');
+const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
@@ -76,7 +77,16 @@ app.get('/api/state', (req, res) => res.json(readJSON(STATE_FILE, { present: fal
 app.get('/api/schedule', (req, res) => res.json(readJSON(SCHEDULE_FILE, [])));
 app.get('/api/config', (req, res) => {
   res.set('Cache-Control', 'no-store');
-  res.json({ siteName: process.env.SITE_NAME || 'Open Hours' });
+  const cfg = readJSON(CONFIG_FILE, {});
+  res.json({ siteName: cfg.siteName || process.env.SITE_NAME || 'Open Hours' });
+});
+
+app.post('/admin/config', requireAdmin, (req, res) => {
+  const { siteName } = req.body;
+  if (typeof siteName !== 'string' || !siteName.trim())
+    return res.status(400).json({ error: 'siteName is required' });
+  writeJSON(CONFIG_FILE, { siteName: siteName.trim() });
+  res.json({ ok: true });
 });
 app.get('/vapid-public-key', (req, res) => res.send(process.env.VAPID_PUBLIC_KEY || ''));
 

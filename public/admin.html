@@ -171,6 +171,17 @@
         <div id="schedule-list"><div class="no-entries">Loading...</div></div>
       </div>
 
+      <!-- Display title -->
+      <div class="card">
+        <h2>Display Title</h2>
+        <div class="form-row">
+          <label for="display-title">Shown in the widget and schedule page</label>
+          <input type="text" id="display-title" placeholder="e.g. Commune with JR">
+        </div>
+        <button class="btn btn-primary" onclick="saveTitle()">Save</button>
+        <div class="error" id="title-error"></div>
+      </div>
+
       <!-- Add entry -->
       <div class="card">
         <h2>Add Session</h2>
@@ -238,6 +249,7 @@
       document.getElementById('app').style.display = 'block';
       loadState();
       loadSchedule();
+      loadTitle();
       startSSE();
       prefillDate();
     }
@@ -367,6 +379,28 @@
           list.innerHTML = '<div class="no-entries">No upcoming sessions.</div>';
         }
       }
+    }
+
+    async function loadTitle() {
+      const cfg = await fetch('/api/config').then(r => r.json());
+      document.getElementById('display-title').value = cfg.siteName || '';
+    }
+
+    async function saveTitle() {
+      const err = document.getElementById('title-error');
+      err.textContent = '';
+      const siteName = document.getElementById('display-title').value.trim();
+      if (!siteName) { err.textContent = 'Title cannot be empty.'; return; }
+      const res = await fetch('/admin/config', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ siteName })
+      });
+      if (res.status === 401) { sessionStorage.removeItem('yaji_pw'); location.reload(); return; }
+      if (!res.ok) { err.textContent = 'Failed to save.'; return; }
+      err.style.color = '#15803d';
+      err.textContent = 'Saved.';
+      setTimeout(() => { err.textContent = ''; err.style.color = ''; }, 2000);
     }
 
     function prefillDate() {
