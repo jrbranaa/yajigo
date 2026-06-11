@@ -12,8 +12,31 @@
       background: #f9fafb;
       color: #111827;
       min-height: 100vh;
-      padding: 48px 16px;
+      padding: 0 16px 48px;
     }
+
+    nav {
+      padding: 20px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 580px;
+      margin: 0 auto;
+    }
+    .nav-logo {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #111827;
+      text-decoration: none;
+      letter-spacing: -0.01em;
+    }
+    .nav-links { display: flex; gap: 24px; align-items: center; }
+    .nav-links a {
+      font-size: 0.875rem;
+      color: #6b7280;
+      text-decoration: none;
+    }
+    .nav-links a:hover { color: #111827; }
 
     .container { max-width: 580px; margin: 0 auto; }
 
@@ -140,12 +163,17 @@
     /* Error */
     .error { color: #dc2626; font-size: 0.8rem; margin-top: 8px; }
 
-    /* Nav */
-    .nav-link { font-size: 0.8rem; color: #6b7280; text-decoration: none; float: right; margin-top: 4px; }
-    .nav-link:hover { color: #111827; }
   </style>
 </head>
 <body>
+
+  <nav>
+    <a class="nav-logo" href="/landing">Yajigo</a>
+    <div class="nav-links">
+      <a href="/about">About</a>
+      <a href="/schedule" target="_blank">View public page →</a>
+    </div>
+  </nav>
 
   <!-- Login -->
   <div id="login-screen">
@@ -161,7 +189,7 @@
   <!-- App -->
   <div id="app">
     <div class="container">
-      <h1>Admin <a class="nav-link" href="/schedule" target="_blank">View public page →</a></h1>
+      <h1>Admin</h1>
 
       <!-- Presence -->
       <div class="card">

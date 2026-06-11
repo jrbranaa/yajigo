@@ -12,10 +12,33 @@
       background: #f9fafb;
       color: #111827;
       min-height: 100vh;
-      padding: 48px 16px;
+      padding: 0 16px 48px;
     }
 
-    .container { max-width: 600px; margin: 0 auto; }
+    nav {
+      padding: 20px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .nav-logo {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #111827;
+      text-decoration: none;
+      letter-spacing: -0.01em;
+    }
+    .nav-links { display: flex; gap: 24px; align-items: center; }
+    .nav-links a {
+      font-size: 0.875rem;
+      color: #6b7280;
+      text-decoration: none;
+    }
+    .nav-links a:hover { color: #111827; }
+
+    .container { max-width: 600px; margin: 0 auto; padding-top: 16px; }
 
     header { margin-bottom: 36px; }
     header h1 { font-size: 1.75rem; font-weight: 700; color: #111827; }
@@ -131,6 +154,14 @@
   </style>
 </head>
 <body>
+  <nav>
+    <a class="nav-logo" href="/landing">Yajigo</a>
+    <div class="nav-links">
+      <a href="/about">About</a>
+      <a href="/schedule">Demo</a>
+    </div>
+  </nav>
+
   <div class="container">
     <header>
       <h1 id="site-name"></h1>
