@@ -126,19 +126,18 @@
     }
 
     function formatNext(entry) {
+      const start = new Date(entry.date + 'T' + entry.time + ':00Z');
       const now = new Date();
-      const today = new Date(); today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
-      const entryDate = new Date(entry.date + 'T00:00:00');
+      const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const tomorrowLocal = new Date(todayLocal); tomorrowLocal.setDate(todayLocal.getDate() + 1);
+      const entryLocalDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
 
       let dateLabel;
-      if (entryDate.getTime() === today.getTime()) dateLabel = 'Today';
-      else if (entryDate.getTime() === tomorrow.getTime()) dateLabel = 'Tomorrow';
-      else dateLabel = entryDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      if (entryLocalDay.getTime() === todayLocal.getTime()) dateLabel = 'Today';
+      else if (entryLocalDay.getTime() === tomorrowLocal.getTime()) dateLabel = 'Tomorrow';
+      else dateLabel = start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
-      const [h, m] = entry.time.split(':').map(Number);
-      const ampm = h >= 12 ? 'PM' : 'AM';
-      const timeLabel = `${h % 12 || 12}:${m.toString().padStart(2, '0')} ${ampm}`;
+      const timeLabel = start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
       return `Next: ${entry.label} · ${dateLabel} at ${timeLabel}`;
     }
@@ -152,14 +151,14 @@
         const now = new Date();
 
         const current = schedule.find(e => {
-          const start = new Date(e.date + 'T' + e.time + ':00');
+          const start = new Date(e.date + 'T' + e.time + ':00Z');
           const end = new Date(start.getTime() + (e.duration || 120) * 60000);
           return now >= start && now < end;
         });
 
         const upcoming = schedule
-          .filter(e => new Date(e.date + 'T' + e.time + ':00') >= now)
-          .sort((a, b) => `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`));
+          .filter(e => new Date(e.date + 'T' + e.time + ':00Z') >= now)
+          .sort((a, b) => new Date(a.date + 'T' + a.time + ':00Z') - new Date(b.date + 'T' + b.time + ':00Z'));
 
         update(state);
 

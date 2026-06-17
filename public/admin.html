@@ -226,7 +226,7 @@
 
       <!-- Add entry -->
       <div class="card">
-        <h2>Add Session</h2>
+        <h2>Add Session <span id="tz-label" style="font-size:0.75rem;font-weight:400;color:#9ca3af;"></span></h2>
         <div class="form-grid">
           <div class="form-row">
             <label for="date">Date</label>
@@ -356,11 +356,10 @@
     // ── Schedule ──────────────────────────────────────────────────────────────
 
     function formatDateTime(date, time) {
-      const d = new Date(date + 'T00:00:00');
-      const dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-      const [h, m] = time.split(':').map(Number);
-      const ampm = h >= 12 ? 'PM' : 'AM';
-      return `${dateStr} at ${h % 12 || 12}:${m.toString().padStart(2, '0')} ${ampm}`;
+      const utc = new Date(date + 'T' + time + ':00Z');
+      const dateStr = utc.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      const timeStr = utc.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZoneName: 'short' });
+      return `${dateStr} at ${timeStr}`;
     }
 
     async function loadSchedule() {
@@ -385,14 +384,21 @@
     async function addEntry() {
       const err = document.getElementById('add-error');
       err.textContent = '';
+      const localDate = document.getElementById('date').value;
+      const localTime = document.getElementById('time').value;
+      if (!localDate || !localTime || !document.getElementById('label').value.trim()) {
+        err.textContent = 'Date, time, and label are required.';
+        return;
+      }
+      const utc = new Date(localDate + 'T' + localTime + ':00');
       const body = {
-        date: document.getElementById('date').value,
-        time: document.getElementById('time').value,
+        date: utc.toISOString().slice(0, 10),
+        time: utc.toISOString().slice(11, 16),
         label: document.getElementById('label').value.trim(),
         duration: document.getElementById('duration').value || null,
         link: document.getElementById('link').value.trim() || null
       };
-      if (!body.date || !body.time || !body.label) {
+      if (!body.label) {
         err.textContent = 'Date, time, and label are required.';
         return;
       }
@@ -461,8 +467,11 @@
     }
 
     function prefillDate() {
-      const today = new Date().toISOString().split('T')[0];
-      document.getElementById('date').value = today;
+      const now = new Date();
+      const localDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+      document.getElementById('date').value = localDate;
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      document.getElementById('tz-label').textContent = tz;
     }
   </script>
 </body>

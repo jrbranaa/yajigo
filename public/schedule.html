@@ -224,28 +224,41 @@
     es.onerror = () => fetch('/api/state').then(r => r.json()).then(updateStatus);
 
     // Schedule
-    function formatDate(dateStr) {
-      const d = new Date(dateStr + 'T00:00:00');
-      const today = new Date(); today.setHours(0,0,0,0);
+    function localDateKey(utcDate) {
+      return `${utcDate.getFullYear()}-${String(utcDate.getMonth()+1).padStart(2,'0')}-${String(utcDate.getDate()).padStart(2,'0')}`;
+    }
+
+    function formatDate(localKey) {
+      const [y, m, d] = localKey.split('-').map(Number);
+      const entryDay = new Date(y, m - 1, d);
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
-      if (d.getTime() === today.getTime()) return { label: 'Today', isToday: true };
-      if (d.getTime() === tomorrow.getTime()) return { label: 'Tomorrow', isToday: false };
+      if (entryDay.getTime() === today.getTime()) return { label: 'Today', isToday: true };
+      if (entryDay.getTime() === tomorrow.getTime()) return { label: 'Tomorrow', isToday: false };
       return {
-        label: d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }),
+        label: entryDay.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }),
         isToday: false
       };
     }
 
-    function formatTime(timeStr) {
-      const [h, m] = timeStr.split(':').map(Number);
-      const ampm = h >= 12 ? 'PM' : 'AM';
-      return `${h % 12 || 12}:${m.toString().padStart(2, '0')} ${ampm}`;
+    function formatTime(dateStr, timeStr) {
+      const utc = new Date(dateStr + 'T' + timeStr + ':00Z');
+      return utc.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZoneName: 'short' });
     }
 
     async function loadSchedule() {
       const schedule = await fetch('/api/schedule').then(r => r.json());
-      const today = new Date(); today.setHours(0,0,0,0);
-      const upcoming = schedule.filter(e => new Date(e.date + 'T00:00:00') >= today);
+      const now = new Date();
+      const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const upcoming = schedule
+        .filter(e => {
+          const start = new Date(e.date + 'T' + e.time + ':00Z');
+          const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+          return startDay >= todayLocal;
+        })
+        .sort((a, b) => new Date(a.date + 'T' + a.time + ':00Z') - new Date(b.date + 'T' + b.time + ':00Z'));
+
       const list = document.getElementById('schedule-list');
 
       if (!upcoming.length) {
@@ -255,15 +268,17 @@
 
       const groups = {};
       upcoming.forEach(e => {
-        if (!groups[e.date]) groups[e.date] = [];
-        groups[e.date].push(e);
+        const start = new Date(e.date + 'T' + e.time + ':00Z');
+        const key = localDateKey(start);
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(e);
       });
 
-      list.innerHTML = Object.entries(groups).map(([date, entries]) => {
-        const { label, isToday } = formatDate(date);
+      list.innerHTML = Object.entries(groups).map(([key, entries]) => {
+        const { label, isToday } = formatDate(key);
         const rows = entries.map(e => `
           <div class="entry">
-            <div class="entry-time">${formatTime(e.time)}</div>
+            <div class="entry-time">${formatTime(e.date, e.time)}</div>
             <div class="entry-body">
               <div class="entry-label">${e.label}</div>
               ${e.duration ? `<div class="entry-duration">${e.duration} minutes</div>` : ''}
