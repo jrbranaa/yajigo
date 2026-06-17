@@ -74,25 +74,33 @@
     }
     .session-info.visible { display: block; }
     .session-info.live { color: #15803d; font-weight: 600; }
-    .powered-by {
-      font-size: 10px;
-      color: #d1d5db;
-      margin-top: 2px;
+    .header-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
     }
-    .powered-by a { color: inherit; text-decoration: none; }
-    .powered-by a:hover { color: #9ca3af; }
     .site-name {
       font-size: 11px;
       font-weight: 600;
       color: #9ca3af;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      padding-bottom: 2px;
+      flex: 1;
     }
+    .powered-by {
+      font-size: 10px;
+      color: #d1d5db;
+      flex-shrink: 0;
+    }
+    .powered-by a { color: inherit; text-decoration: none; }
+    .powered-by a:hover { color: #9ca3af; }
   </style>
 </head>
 <body>
-  <div class="site-name" id="site-name"></div>
+  <div class="header-row">
+    <div class="site-name" id="site-name"></div>
+    <div class="powered-by">Powered by <a href="https://yajigo.com" target="_blank" rel="noopener">Yajigo</a></div>
+  </div>
   <div class="row">
     <div class="dot" id="dot"></div>
     <span class="label" id="label">Checking...</span>
@@ -102,8 +110,6 @@
   <div class="row">
     <a class="schedule-link" href="/schedule" target="_blank" rel="noopener">View schedule →</a>
   </div>
-  <div class="powered-by">Powered by <a href="https://yajigo.com" target="_blank" rel="noopener">Yajigo</a></div>
-
   <script>
     const dot = document.getElementById('dot');
     const label = document.getElementById('label');
