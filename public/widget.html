@@ -63,19 +63,6 @@
       white-space: nowrap;
     }
     .schedule-link:hover { color: #4b5563; text-decoration: underline; }
-    .next-event {
-      font-size: 12px;
-      color: #9ca3af;
-      padding-left: 21px;
-      display: none;
-      align-items: center;
-      gap: 8px;
-      white-space: nowrap;
-      overflow: hidden;
-    }
-    .next-event.visible { display: flex; }
-    .next-event.live { color: #15803d; font-weight: 600; }
-    .next-event-text { overflow: hidden; text-overflow: ellipsis; }
     .powered-by {
       font-size: 10px;
       color: #d1d5db;
@@ -101,16 +88,13 @@
     <a class="join-btn" id="join-btn" href="#" target="_blank" rel="noopener" style="display:none">Join</a>
     <a class="schedule-link" id="schedule-link" href="/schedule" target="_blank" rel="noopener">View schedule →</a>
   </div>
-  <div class="next-event" id="next-event"></div>
   <div class="powered-by">Powered by <a href="https://yajigo.com" target="_blank" rel="noopener">Yajigo</a></div>
 
   <script>
     const dot = document.getElementById('dot');
     const label = document.getElementById('label');
-    const nextEvent = document.getElementById('next-event');
     const siteNameEl = document.getElementById('site-name');
     const joinBtn = document.getElementById('join-btn');
-    const scheduleLink = document.getElementById('schedule-link');
 
     fetch('/api/config').then(r => r.json()).then(cfg => {
       siteNameEl.textContent = cfg.siteName;
@@ -128,23 +112,6 @@
       }
     }
 
-    function formatNext(entry) {
-      const start = new Date(entry.date + 'T' + entry.time + ':00Z');
-      const now = new Date();
-      const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const tomorrowLocal = new Date(todayLocal); tomorrowLocal.setDate(todayLocal.getDate() + 1);
-      const entryLocalDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
-
-      let dateLabel;
-      if (entryLocalDay.getTime() === todayLocal.getTime()) dateLabel = 'Today';
-      else if (entryLocalDay.getTime() === tomorrowLocal.getTime()) dateLabel = 'Tomorrow';
-      else dateLabel = start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-
-      const timeLabel = start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-
-      return `Next: ${entry.label} · ${dateLabel} at ${timeLabel}`;
-    }
-
     async function loadScheduleInfo() {
       try {
         const [schedule, state] = await Promise.all([
@@ -159,29 +126,13 @@
           return now >= start && now < end;
         });
 
-        const upcoming = schedule
-          .filter(e => new Date(e.date + 'T' + e.time + ':00Z') >= now)
-          .sort((a, b) => new Date(a.date + 'T' + a.time + ':00Z') - new Date(b.date + 'T' + b.time + ':00Z'));
-
         update(state);
 
-        if (current) {
-          if (current.link) {
-            joinBtn.href = current.link;
-            joinBtn.style.display = '';
-            scheduleLink.style.display = 'none';
-          }
-          nextEvent.innerHTML = `<span class="next-event-text">Live now: ${current.label}</span>`;
-          nextEvent.classList.add('visible', 'live');
-          return;
-        }
-
-        joinBtn.style.display = 'none';
-        scheduleLink.style.display = '';
-
-        if (upcoming.length) {
-          nextEvent.textContent = formatNext(upcoming[0]);
-          nextEvent.classList.add('visible');
+        if (current && current.link) {
+          joinBtn.href = current.link;
+          joinBtn.style.display = '';
+        } else {
+          joinBtn.style.display = 'none';
         }
       } catch {}
     }
