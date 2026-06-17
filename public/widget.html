@@ -148,6 +148,10 @@
     });
 
     loadScheduleInfo();
+
+    new ResizeObserver(() => {
+      window.parent.postMessage({ type: 'yajigo-resize', height: document.body.scrollHeight }, '*');
+    }).observe(document.body);
   </script>
 </body>
 </html>
