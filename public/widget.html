@@ -63,6 +63,17 @@
       white-space: nowrap;
     }
     .schedule-link:hover { color: #4b5563; text-decoration: underline; }
+    .session-info {
+      font-size: 12px;
+      color: #9ca3af;
+      padding-left: 21px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: none;
+    }
+    .session-info.visible { display: block; }
+    .session-info.live { color: #15803d; font-weight: 600; }
     .powered-by {
       font-size: 10px;
       color: #d1d5db;
@@ -87,6 +98,7 @@
     <span class="label" id="label">Checking...</span>
     <a class="join-btn" id="join-btn" href="#" target="_blank" rel="noopener" style="display:none">Join</a>
   </div>
+  <div class="session-info" id="session-info"></div>
   <div class="row">
     <a class="schedule-link" href="/schedule" target="_blank" rel="noopener">View schedule →</a>
   </div>
@@ -104,6 +116,7 @@
     }).catch(() => {});
 
     let currentSession = null;
+    const sessionInfo = document.getElementById('session-info');
 
     function update(state) {
       if (state.present) {
@@ -123,6 +136,22 @@
       }
     }
 
+    function formatNext(entry) {
+      const start = new Date(entry.date + 'T' + entry.time + ':00Z');
+      const now = new Date();
+      const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const tomorrowLocal = new Date(todayLocal); tomorrowLocal.setDate(todayLocal.getDate() + 1);
+      const entryLocalDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+
+      let dateLabel;
+      if (entryLocalDay.getTime() === todayLocal.getTime()) dateLabel = 'Today';
+      else if (entryLocalDay.getTime() === tomorrowLocal.getTime()) dateLabel = 'Tomorrow';
+      else dateLabel = start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+      const timeLabel = start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      return `Next: ${entry.label} · ${dateLabel} at ${timeLabel}`;
+    }
+
     async function loadScheduleInfo() {
       try {
         const [schedule, state] = await Promise.all([
@@ -136,6 +165,21 @@
           const end = new Date(start.getTime() + (e.duration || 120) * 60000);
           return now >= start && now < end;
         }) || null;
+
+        if (currentSession) {
+          sessionInfo.textContent = `Live now: ${currentSession.label}`;
+          sessionInfo.className = 'session-info visible live';
+        } else {
+          const next = schedule
+            .filter(e => new Date(e.date + 'T' + e.time + ':00Z') > now)
+            .sort((a, b) => new Date(a.date + 'T' + a.time + ':00Z') - new Date(b.date + 'T' + b.time + ':00Z'))[0];
+          if (next) {
+            sessionInfo.textContent = formatNext(next);
+            sessionInfo.className = 'session-info visible';
+          } else {
+            sessionInfo.className = 'session-info';
+          }
+        }
 
         update(state);
       } catch {}
