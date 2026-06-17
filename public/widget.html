@@ -131,7 +131,7 @@
 
         update(state);
 
-        if (current && current.link) {
+        if (state.present && current && current.link) {
           joinBtn.href = current.link;
           joinBtn.style.display = '';
         } else {
