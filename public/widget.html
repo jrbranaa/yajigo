@@ -86,7 +86,9 @@
     <div class="dot" id="dot"></div>
     <span class="label" id="label">Checking...</span>
     <a class="join-btn" id="join-btn" href="#" target="_blank" rel="noopener" style="display:none">Join</a>
-    <a class="schedule-link" id="schedule-link" href="/schedule" target="_blank" rel="noopener">View schedule →</a>
+  </div>
+  <div class="row">
+    <a class="schedule-link" href="/schedule" target="_blank" rel="noopener">View schedule →</a>
   </div>
   <div class="powered-by">Powered by <a href="https://yajigo.com" target="_blank" rel="noopener">Yajigo</a></div>
 
@@ -95,6 +97,7 @@
     const label = document.getElementById('label');
     const siteNameEl = document.getElementById('site-name');
     const joinBtn = document.getElementById('join-btn');
+
 
     fetch('/api/config').then(r => r.json()).then(cfg => {
       siteNameEl.textContent = cfg.siteName;
