@@ -103,6 +103,8 @@
       siteNameEl.textContent = cfg.siteName;
     }).catch(() => {});
 
+    let currentSession = null;
+
     function update(state) {
       if (state.present) {
         dot.className = 'dot present';
@@ -112,6 +114,12 @@
         dot.className = 'dot';
         label.textContent = 'Not currently present';
         label.className = 'label';
+      }
+      if (state.present && currentSession && currentSession.link) {
+        joinBtn.href = currentSession.link;
+        joinBtn.style.display = '';
+      } else {
+        joinBtn.style.display = 'none';
       }
     }
 
@@ -123,20 +131,13 @@
         ]);
         const now = new Date();
 
-        const current = schedule.find(e => {
+        currentSession = schedule.find(e => {
           const start = new Date(e.date + 'T' + e.time + ':00Z');
           const end = new Date(start.getTime() + (e.duration || 120) * 60000);
           return now >= start && now < end;
-        });
+        }) || null;
 
         update(state);
-
-        if (state.present && current && current.link) {
-          joinBtn.href = current.link;
-          joinBtn.style.display = '';
-        } else {
-          joinBtn.style.display = 'none';
-        }
       } catch {}
     }
 
