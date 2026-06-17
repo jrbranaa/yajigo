@@ -98,7 +98,8 @@
   <div class="row">
     <div class="dot" id="dot"></div>
     <span class="label" id="label">Checking...</span>
-    <a class="schedule-link" href="/schedule" target="_blank" rel="noopener">View schedule →</a>
+    <a class="join-btn" id="join-btn" href="#" target="_blank" rel="noopener" style="display:none">Join</a>
+    <a class="schedule-link" id="schedule-link" href="/schedule" target="_blank" rel="noopener">View schedule →</a>
   </div>
   <div class="next-event" id="next-event"></div>
   <div class="powered-by">Powered by <a href="https://yajigo.com" target="_blank" rel="noopener">Yajigo</a></div>
@@ -108,6 +109,8 @@
     const label = document.getElementById('label');
     const nextEvent = document.getElementById('next-event');
     const siteNameEl = document.getElementById('site-name');
+    const joinBtn = document.getElementById('join-btn');
+    const scheduleLink = document.getElementById('schedule-link');
 
     fetch('/api/config').then(r => r.json()).then(cfg => {
       siteNameEl.textContent = cfg.siteName;
@@ -163,13 +166,18 @@
         update(state);
 
         if (current) {
-          const btn = current.link
-            ? `<a class="join-btn" href="${current.link}" target="_blank" rel="noopener">Join</a>`
-            : '';
-          nextEvent.innerHTML = `<span class="next-event-text">Live now: ${current.label}</span>${btn}`;
+          if (current.link) {
+            joinBtn.href = current.link;
+            joinBtn.style.display = '';
+            scheduleLink.style.display = 'none';
+          }
+          nextEvent.innerHTML = `<span class="next-event-text">Live now: ${current.label}</span>`;
           nextEvent.classList.add('visible', 'live');
           return;
         }
+
+        joinBtn.style.display = 'none';
+        scheduleLink.style.display = '';
 
         if (upcoming.length) {
           nextEvent.textContent = formatNext(upcoming[0]);
