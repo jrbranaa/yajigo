@@ -121,26 +121,10 @@
       siteNameEl.textContent = cfg.siteName;
     }).catch(() => {});
 
+    let schedule = [];
+    let lastState = { present: false };
     let currentSession = null;
     const sessionInfo = document.getElementById('session-info');
-
-    function update(state) {
-      if (state.present) {
-        dot.className = 'dot present';
-        label.textContent = 'Currently present';
-        label.className = 'label present';
-      } else {
-        dot.className = 'dot';
-        label.textContent = 'Not currently present';
-        label.className = 'label';
-      }
-      if (state.present && currentSession && currentSession.link) {
-        joinBtn.href = currentSession.link;
-        joinBtn.style.display = '';
-      } else {
-        joinBtn.style.display = 'none';
-      }
-    }
 
     function formatNext(entry) {
       const start = new Date(entry.date + 'T' + entry.time + ':00Z');
@@ -158,35 +142,58 @@
       return `Next: ${entry.label} · ${dateLabel} at ${timeLabel}`;
     }
 
-    async function loadScheduleInfo() {
+    function refreshSessions() {
+      const now = new Date();
+      currentSession = schedule.find(e => {
+        const start = new Date(e.date + 'T' + e.time + ':00Z');
+        const end = new Date(start.getTime() + (e.duration || 120) * 60000);
+        return now >= start && now < end;
+      }) || null;
+
+      if (lastState.present && currentSession) {
+        sessionInfo.textContent = `Live now: ${currentSession.label}`;
+        sessionInfo.className = 'session-info visible live';
+      } else {
+        const next = schedule
+          .filter(e => new Date(e.date + 'T' + e.time + ':00Z') > now)
+          .sort((a, b) => new Date(a.date + 'T' + a.time + ':00Z') - new Date(b.date + 'T' + b.time + ':00Z'))[0];
+        if (next) {
+          sessionInfo.textContent = formatNext(next);
+          sessionInfo.className = 'session-info visible';
+        } else {
+          sessionInfo.className = 'session-info';
+        }
+      }
+
+      if (lastState.present && currentSession && currentSession.link) {
+        joinBtn.href = currentSession.link;
+        joinBtn.style.display = '';
+      } else {
+        joinBtn.style.display = 'none';
+      }
+    }
+
+    function update(state) {
+      lastState = state;
+      if (state.present) {
+        dot.className = 'dot present';
+        label.textContent = 'Currently present';
+        label.className = 'label present';
+      } else {
+        dot.className = 'dot';
+        label.textContent = 'Not currently present';
+        label.className = 'label';
+      }
+      refreshSessions();
+    }
+
+    async function loadSchedule() {
       try {
-        const [schedule, state] = await Promise.all([
+        const [sched, state] = await Promise.all([
           fetch('/api/schedule').then(r => r.json()),
           fetch('/api/state').then(r => r.json()),
         ]);
-        const now = new Date();
-
-        currentSession = schedule.find(e => {
-          const start = new Date(e.date + 'T' + e.time + ':00Z');
-          const end = new Date(start.getTime() + (e.duration || 120) * 60000);
-          return now >= start && now < end;
-        }) || null;
-
-        if (currentSession) {
-          sessionInfo.textContent = `Live now: ${currentSession.label}`;
-          sessionInfo.className = 'session-info visible live';
-        } else {
-          const next = schedule
-            .filter(e => new Date(e.date + 'T' + e.time + ':00Z') > now)
-            .sort((a, b) => new Date(a.date + 'T' + a.time + ':00Z') - new Date(b.date + 'T' + b.time + ':00Z'))[0];
-          if (next) {
-            sessionInfo.textContent = formatNext(next);
-            sessionInfo.className = 'session-info visible';
-          } else {
-            sessionInfo.className = 'session-info';
-          }
-        }
-
+        schedule = sched;
         update(state);
       } catch {}
     }
@@ -197,7 +204,8 @@
       label.textContent = 'Status unavailable';
     });
 
-    loadScheduleInfo();
+    loadSchedule();
+    setInterval(refreshSessions, 60000);
 
     new ResizeObserver(() => {
       window.parent.postMessage({ type: 'yajigo-resize', height: document.body.scrollHeight }, '*');
