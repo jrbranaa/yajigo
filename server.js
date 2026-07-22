@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
+const { exec } = require('child_process');
 const webpush = require('web-push');
 
 const app = express();
@@ -73,6 +75,8 @@ function requireAdmin(req, res, next) {
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
+
+app.get('/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
 
 app.get('/api/state', (req, res) => res.json(readJSON(STATE_FILE, { present: false })));
 app.get('/api/schedule', (req, res) => res.json(readJSON(SCHEDULE_FILE, [])));
@@ -219,6 +223,23 @@ async function notifyDiscord() {
     body: JSON.stringify({ content })
   });
 }
+
+// ── GitHub webhook ────────────────────────────────────────────────────────────
+
+app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
+  const secret = process.env.WEBHOOK_SECRET;
+  if (secret) {
+    const sig = req.headers['x-hub-signature-256'];
+    const expected = 'sha256=' + crypto.createHmac('sha256', secret).update(req.body).digest('hex');
+    if (!sig || !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected)))
+      return res.status(401).send('Unauthorized');
+  }
+  res.sendStatus(200);
+  exec('git pull && docker compose restart', (err, stdout, stderr) => {
+    if (err) console.error('deploy failed:', stderr);
+    else console.log('deploy:', stdout.trim());
+  });
+});
 
 // ── Page routes ───────────────────────────────────────────────────────────────
 
